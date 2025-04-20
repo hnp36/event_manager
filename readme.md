@@ -1,3 +1,64 @@
+# Assignment 10 
+
+## Closed Issues (Bug Fixes)
+
+1. **Bug #1:**[Added last_login field to UserResponse schema](https://github.com/hnp36/event_manager/issues/1)
+  ## Description
+    Fixed inconsistent example values for email and password between the LoginRequest and UserCreate schemas in Swagger UI, which was causing confusion during testing. Synchronized the example data across both schemas, added an automated test to enforce their consistency, and cleaned up the test fixtures accordingly.
+
+2. **Bug #2:**[In Tests, Missing fixtures for user_token, admin_token, and manager_token](https://github.com/hnp36/event_manager/issues/2)
+  ## Description
+  ISSUE:
+Tests were failing because they tried to use token fixtures (user_token, admin_token, and manager_token) that were not defined in your conftest.py file. When pytest runs your tests, it looks for fixtures with those names but cannot find them, which results in errors.
+
+How I Resolved It:
+
+I added three new fixtures at the end of your conftest.py file to create authentication tokens:
+
+user_token: generates a token for a verified user
+admin_token: generates a token for an admin user
+manager_token: generates a token for a manager user
+Each token fixture is now connected to its corresponding user fixture. For instance, the admin_token is linked to the admin_user. I used the create_access_token function from your JWT service to generate properly formatted tokens that include the user ID and role. Additionally, I updated the login_request_data fixture to use "username" instead of "email" to align with the requirements of your login endpoint. This change follows the common OAuth2 practice of allowing the username field to accept an email address.
+
+3. **Bug #3:**[SMTPServerDisconnected: Connection unexpectedly closed](https://github.com/hnp36/event_manager/issues/3)
+  ## Description
+  Issue:
+The application tried to send an email using the SMTP server, but the server closed the connection before the message could be sent.
+
+smtplib.SMTPServerDisconnected: Connection unexpectedly closed
+
+Possible Reason:
+There could be a problem with the SMTP settings, such as the hostname, port, or password. Additionally, there may be an issue with the credentials needed to authenticate the SMTP session.
+
+4. **Bug #4:**[Duplicate entries in the UserListResponse Swagger example](https://github.com/hnp36/event_manager/issues/4)
+  ## Description
+The example dictionary within the UserListResponse schema contained duplicate fields such as "bio" and "role," which resulted in invalid JSON and confusing Swagger documentation.
+
+I removed the duplicates and revised the example block to align with the actual UserResponse schema. Additionally, I added the missing field "is_professional." I have confirmed that all test cases continue to pass.
+
+5. **Bug #5:**[Unclear Error message for the login page ](https://github.com/hnp36/event_manager/issues/5)
+  ## Description
+I observed that the error messages were unclear when users entered incorrect login details or had their accounts locked. To improve this, I revised the login process to display clearer messages, such as “Incorrect email or password” for failed attempts and “Account locked” after too many tries. This helps users easily understand the issue.
+
+
+
+## Docker Image
+
+![Docker Image](Docker.png)
+
+## Test-Coverage
+
+![Test-Cov](Test-Cov.png)
+
+## Reflection
+
+Working through these bug fixes gave me valuable experience in technical problem-solving and collaboration within a development team. I improved my understanding of how schemas and example values affect API documentation, particularly with tools like Swagger. Initially, inconsistencies between schemas caused confusion during testing, but aligning example data and automating checks helped me see how small mismatches impact usability.
+
+Resolving token-related fixture errors emphasized the importance of robust, reusable test infrastructure and clarified the role of OAuth2 standards in FastAPI. Furthermore, I learned about the significance of clear communication and documentation. Bugs such as SMTP disconnection and unclear login error messages highlighted the need for better configuration management and user-friendly error reporting.
+
+This experience underscored how attention to detail—like fixing duplicate Swagger fields—can enhance API quality. Moving forward, I aim to incorporate more automated tests and clearer feedback loops in development and code review processes.
+
+
 # Event Manager Company: Software QA Analyst/Developer Onboarding Assignment
 
 Welcome to the Event Manager Company! As a newly hired Software QA Analyst/Developer and a student in software engineering, you are embarking on an exciting journey to contribute to our project aimed at developing a secure, robust REST API that supports JWT token-based OAuth2 authentication. This API serves as the backbone of our user management system and will eventually expand to include features for event management and registration.
