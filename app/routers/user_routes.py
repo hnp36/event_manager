@@ -139,8 +139,8 @@ async def create_user(user: UserCreate, request: Request, db: AsyncSession = Dep
     Returns:
     - UserResponse: The newly created user's information along with navigation links.
     """
-    existing_user = await UserService.get_by_email(db, user.email)
-    if existing_user:
+    existing_email = await UserService.get_by_email(db, user.email)
+    if existing_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
     
     created_user = await UserService.create(db, user.model_dump(), email_service)
@@ -198,37 +198,38 @@ async def register(user_data: UserCreate, session: AsyncSession = Depends(get_db
     raise HTTPException(status_code=400, detail="Email already exists")
 
 @router.post("/login/", response_model=TokenResponse, tags=["Login and Registration"])
-async def login(form_data: LoginRequest, session: AsyncSession = Depends(get_db)):
-    if await UserService.is_account_locked(session, form_data.email):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
+    if await UserService.is_account_locked(session, form_data.username):
         raise HTTPException(status_code=400, detail="Account locked due to too many failed login attempts.")
 
-    user = await UserService.login_user(session, form_data.email, form_data.password)
+    user = await UserService.login_user(session, form_data.username, form_data.password)
     if user:
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+
         access_token = create_access_token(
             data={"sub": user.email, "role": str(user.role.name)},
             expires_delta=access_token_expires
         )
-        return {"access_token": access_token, "token_type": "bearer"}
 
+        return {"access_token": access_token, "token_type": "bearer"}
     raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
-# @router.post("/login/", include_in_schema=False, response_model=TokenResponse, tags=["Login and Registration"])
-# async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
-#     if await UserService.is_account_locked(session, form_data.username):
-#         raise HTTPException(status_code=400, detail="Account locked due to too many failed login attempts.")
+@router.post("/login/", include_in_schema=False, response_model=TokenResponse, tags=["Login and Registration"])
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
+    if await UserService.is_account_locked(session, form_data.username):
+        raise HTTPException(status_code=400, detail="Account locked due to too many failed login attempts.")
 
-#     user = await UserService.login_user(session, form_data.username, form_data.password)
-#     if user:
-#         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    user = await UserService.login_user(session, form_data.username, form_data.password)
+    if user:
+        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
 
-#         access_token = create_access_token(
-#             data={"sub": user.email, "role": str(user.role.name)},
-#             expires_delta=access_token_expires
-#         )
+        access_token = create_access_token(
+            data={"sub": user.email, "role": str(user.role.name)},
+            expires_delta=access_token_expires
+        )
 
-#         return {"access_token": access_token, "token_type": "bearer"}
-#     raise HTTPException(status_code=401, detail="Incorrect email or password.")
+        return {"access_token": access_token, "token_type": "bearer"}
+    raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
 
 @router.get("/verify-email/{user_id}/{token}", status_code=status.HTTP_200_OK, name="verify_email", tags=["Login and Registration"])
